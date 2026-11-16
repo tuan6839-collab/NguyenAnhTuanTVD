@@ -1,0 +1,4 @@
+﻿Câu hỏi,Dạng,Điểm,A,B,C,D,Đáp án,Dung sai,Lời giải
+"Giá trị của 2+3 bằng bao nhiêu?",mcq,1,4,5,6,7,B,0,"Vì 2+3=5"
+"Số 0 là số dương.",truefalse,1,,,,,S,0,"Số 0 không phải số dương"
+"Tính 3^2.",short,1,,,,,9,0.01,"3^2=9"

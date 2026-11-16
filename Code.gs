@@ -9,13 +9,15 @@ const TVD_CONFIG = {
   TEACHER_TOKEN: 'THAY_BANG_MOT_MA_BI_MAT_DAI_IT_NHAT_24_KY_TU',
   MAX_REQUEST_BYTES: 500000,
   MAX_QUESTIONS: 200,
-  MAX_DURATION_MINUTES: 300
+  MAX_DURATION_MINUTES: 300,
+  MAX_BANK_IMPORT: 150
 };
 
 const TVD_HEADERS = {
   Exams: ['id', 'json'],
   Results: ['id', 'examId', 'studentKey', 'json'],
-  Attempts: ['attemptId', 'examId', 'studentKey', 'startedAt', 'expiresAt', 'name', 'className', 'studentId', 'status']
+  Attempts: ['attemptId', 'examId', 'studentKey', 'startedAt', 'expiresAt', 'name', 'className', 'studentId', 'status'],
+  Bank: ['id', 'questionKey', 'json', 'createdAt', 'updatedAt']
 };
 
 function doGet(e) {
@@ -25,7 +27,7 @@ function doGet(e) {
     let result;
     switch (action) {
       case 'health':
-        result = { ok: true, app: 'TVD', version: '1.1', time: new Date().toISOString() };
+        result = { ok: true, app: 'TVD', version: '1.2', time: new Date().toISOString() };
         break;
       case 'get':
         result = getPublicExam_(params.id);
@@ -47,6 +49,10 @@ function doGet(e) {
       case 'results':
         requireTeacher_(params.token);
         result = getResults_(params.examId);
+        break;
+      case 'bankList':
+        requireTeacher_(params.token);
+        result = listBankQuestions_();
         break;
       default:
         throw new Error('Lệnh GET không hợp lệ.');
@@ -75,6 +81,15 @@ function doPost(e) {
       case 'delete':
         requireTeacher_(request.token);
         deleteExam_(data.id);
+        result = { ok: true };
+        break;
+      case 'bankImport':
+        requireTeacher_(request.token);
+        result = importBankQuestions_(data.questions || []);
+        break;
+      case 'bankDelete':
+        requireTeacher_(request.token);
+        deleteBankQuestion_(data.id);
         result = { ok: true };
         break;
       case 'submit':
@@ -252,6 +267,75 @@ function saveExam_(ex) {
   } finally {
     lock.releaseLock();
   }
+}
+
+
+function bankQuestionKey_(q) {
+  const source = normalize_(q.text) + '|' + String(q.type || 'short');
+  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, source, Utilities.Charset.UTF_8);
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/g, '');
+}
+
+function validateBankQuestion_(q, index) {
+  const n = index + 1;
+  if (!q || !String(q.text || '').trim()) throw new Error('Câu ' + n + ' thiếu nội dung.');
+  if (!(Number(q.point) > 0 && Number(q.point) <= 100)) throw new Error('Điểm câu ' + n + ' phải lớn hơn 0 và không quá 100.');
+  if (q.type === 'mcq') {
+    const options = q.options || {};
+    if (!['A','B','C','D'].every(k => String(options[k] || '').trim())) throw new Error('Câu ' + n + ' thiếu một trong bốn phương án A/B/C/D.');
+    if (String(q.answer || '').trim() && !['A','B','C','D'].includes(String(q.answer).toUpperCase())) throw new Error('Đáp án câu ' + n + ' phải là A/B/C/D.')
+  } else if (q.type === 'truefalse') {
+    if (String(q.answer || '').trim() && !['Đ','S'].includes(normalizeTF_(q.answer))) throw new Error('Đáp án câu ' + n + ' phải là Đ hoặc S.');
+  } else if (q.type === 'short') {
+    if (Number(q.tolerance || 0) < 0) throw new Error('Dung sai câu ' + n + ' không được âm.');
+  } else throw new Error('Dạng câu hỏi câu ' + n + ' không hợp lệ.');
+}
+
+function listBankQuestions_() {
+  return rows_('Bank').map(row => { try { return JSON.parse(row[2]); } catch (_) { return null; } })
+    .filter(Boolean).sort((a,b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+}
+
+function importBankQuestions_(questions) {
+  if (!Array.isArray(questions) || !questions.length) throw new Error('Tệp không có câu hỏi hợp lệ để nhập.');
+  if (questions.length > TVD_CONFIG.MAX_BANK_IMPORT) throw new Error('Mỗi lần chỉ nhập tối đa ' + TVD_CONFIG.MAX_BANK_IMPORT + ' câu hỏi. Hãy chia tệp thành nhiều lần nhập.');
+  questions.forEach(validateBankQuestion_);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = sheet_('Bank');
+    const existing = rows_('Bank');
+    let added = 0, updated = 0;
+    questions.forEach(q => {
+      const key = bankQuestionKey_(q);
+      const index = existing.findIndex(row => String(row[1]) === key);
+      const now = new Date().toISOString();
+      if (index >= 0) {
+        const old = JSON.parse(existing[index][2]);
+        const item = Object.assign({}, q, { id: old.id, createdAt: old.createdAt || now, updatedAt: now });
+        const json = JSON.stringify(item);
+        if (json.length > 30000) throw new Error('Một câu hỏi vượt quá giới hạn lưu trữ 30.000 ký tự.');
+        sh.getRange(index + 2, 3).setValue(json);
+        sh.getRange(index + 2, 5).setValue(now);
+        existing[index][2] = json;
+        updated++;
+      } else {
+        const item = Object.assign({}, q, { id: q.id || Utilities.getUuid(), createdAt: now, updatedAt: now });
+        const json = JSON.stringify(item);
+        if (json.length > 30000) throw new Error('Một câu hỏi vượt quá giới hạn lưu trữ 30.000 ký tự.');
+        sh.appendRow([item.id, key, json, now, now]);
+        existing.push([item.id, key, json, now, now]);
+        added++;
+      }
+    });
+    return { ok: true, added: added, updated: updated, total: existing.length };
+  } finally { lock.releaseLock(); }
+}
+
+function deleteBankQuestion_(id) {
+  if (!id) throw new Error('Thiếu mã câu hỏi.');
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try { deleteRowsByColumn_('Bank', 1, String(id)); } finally { lock.releaseLock(); }
 }
 
 function deleteExam_(id) {

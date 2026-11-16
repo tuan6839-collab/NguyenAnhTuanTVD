@@ -12,6 +12,9 @@ Bộ mã nguồn triển khai ứng dụng thi trực tuyến trên GitHub Pages
 | `Code.gs` | API phía máy chủ Google Apps Script |
 | `README.md` | Hướng dẫn cài đặt và vận hành |
 | `.nojekyll` | Giúp GitHub Pages phục vụ tệp tĩnh ổn định |
+| `Mau_Ngan_Hang_Cau_Hoi_TVD.csv` | Mẫu nhập câu hỏi bằng Excel/CSV |
+| `Mau_Ngan_Hang_Cau_Hoi_TVD.json` | Mẫu nhập câu hỏi bằng JSON |
+| `CHANGELOG_1.2.0.md` | Nhật ký nâng cấp |
 
 ## 2. Chức năng
 
@@ -19,7 +22,8 @@ Bộ mã nguồn triển khai ứng dụng thi trực tuyến trên GitHub Pages
 - Đăng nhập bằng tên và mã truy cập được cấu hình trong Apps Script.
 - Tạo, sửa, mở/đóng và xóa từng đợt kiểm tra.
 - Thiết lập tên đợt, lớp, thời lượng, giờ mở và giờ đóng.
-- Tạo câu hỏi trắc nghiệm 4 lựa chọn, đúng/sai và trả lời ngắn.
+- Tạo câu hỏi thủ công hoặc nhập ngân hàng câu hỏi từ DOCX, PDF có văn bản, XLSX/XLS, CSV, JSON và TXT; xem trước và tự cập nhật câu trùng.
+- Chọn câu hỏi đã lưu trong ngân hàng để tái sử dụng ở nhiều đợt kiểm tra.
 - Thiết lập điểm từng câu; câu trả lời ngắn hỗ trợ dung sai số.
 - Sao chép đường link có kèm cấu hình máy chủ để gửi qua Zalo.
 - Xem kết quả theo từng đợt; tải danh sách CSV có BOM, mở trực tiếp bằng Microsoft Excel.
@@ -146,7 +150,64 @@ Nên tạo một đợt thử nghiệm với 3 câu (mỗi dạng một câu), s
 
 Chỉ tổ chức bài kiểm tra thật sau khi hoàn tất các bước kiểm tra trên.
 
-## 11. Giới hạn và khuyến nghị vận hành
+## 11. Nhập đề / câu hỏi từ tệp – Ngân hàng câu hỏi (phiên bản 1.2.0)
+
+Trong giao diện giáo viên, mở **Ngân hàng câu hỏi** → chọn tệp → **Đọc tệp và xem trước** → kiểm tra số câu hợp lệ / lỗi → **Cập nhật ngân hàng**. Câu hỏi được lưu trên Google Sheets, trong sheet `Bank` (sheet được tạo tự động khi nhập lần đầu).
+
+### Định dạng hỗ trợ
+- `.xlsx`, `.xls`: đọc các sheet có bảng cột tiêu đề.
+- `.csv`: đọc bảng có dòng tiêu đề.
+- `.json`: mảng câu hỏi hoặc `{ "questions": [...] }`.
+- `.docx`: trích xuất văn bản; cần viết theo mẫu `Câu 1. ...`, dòng `A. ...` đến `D. ...`, `Đáp án: B`, `Điểm: 1`, `Lời giải: ...`.
+- `.pdf`: chỉ trích xuất được PDF có lớp văn bản; PDF scan/ảnh không có OCR trong bản này.
+- `.txt`: cùng cú pháp câu hỏi như DOCX.
+
+### Mẫu bảng Excel / CSV
+Tệp mẫu tải trực tiếp trong ứng dụng hoặc dùng các cột sau:
+
+| Câu hỏi | Dạng | Điểm | A | B | C | D | Đáp án | Dung sai | Lời giải |
+|---|---|---:|---|---|---|---|---|---:|---|
+| Giá trị của 2+3 bằng bao nhiêu? | mcq | 1 | 4 | 5 | 6 | 7 | B | 0 | Vì 2+3=5 |
+| Số 0 là số dương. | truefalse | 1 | | | | | S | 0 | Số 0 không phải số dương |
+| Tính 3^2. | short | 1 | | | | | 9 | 0.01 | 3^2=9 |
+
+Giá trị ở cột **Dạng**: `mcq`, `truefalse`, `short` (hoặc tên dạng tiếng Việt tương ứng). Với câu trắc nghiệm cần đủ phương án A/B/C/D và đáp án là một trong A/B/C/D. Với đúng/sai nhập đáp án `Đ` hoặc `S`. Trả lời ngắn có thể khai báo dung sai số.
+
+### Cú pháp Word / TXT / PDF có văn bản
+
+```text
+Câu 1. Giá trị của 2+3 bằng bao nhiêu?
+A. 4
+B. 5
+C. 6
+D. 7
+Đáp án: B
+Điểm: 1
+Lời giải: Vì 2+3=5.
+
+Câu 2. Số 0 là số dương.
+Đáp án: S
+Điểm: 1
+```
+
+### Quy tắc tự động cập nhật
+Hệ thống coi hai câu là trùng nếu **nội dung câu hỏi sau chuẩn hóa khoảng trắng/chữ hoa-thường và dạng câu hỏi** giống nhau. Khi trùng, thông tin phương án, đáp án, điểm, dung sai và lời giải được cập nhật theo tệp mới; nếu chưa có thì thêm câu mới. Tính năng không tự suy luận đáp án từ một đề Word/PDF không có đáp án; các câu đủ nội dung nhưng thiếu đáp án vẫn được lưu ở trạng thái cần bổ sung. Khi đưa vào đề kiểm tra, giáo viên phải điền đáp án trước khi lưu đợt thi.
+
+### Lưu ý với công thức Toán học
+- Tệp Word `.docx` và PDF có văn bản được trích xuất dưới dạng văn bản thường. Công thức MathType, hình vẽ, bảng biến thiên, ký hiệu đặc biệt hoặc nội dung đặt trong ảnh có thể không được trích xuất đúng.
+- Luôn xem trước và đối chiếu lại công thức, đáp án, điểm trước khi đưa câu hỏi vào đề chính thức.
+- Trình đọc XLSX/DOCX/PDF tải thư viện mã nguồn mở từ CDN khi mở tính năng nhập tệp, vì vậy cần kết nối Internet.
+
+### Cập nhật lên GitHub sau khi thay bộ mã
+1. Giải nén gói TVD phiên bản mới.
+2. Trong GitHub repository chọn **Add file → Upload files**.
+3. Tải các tệp mới đè lên `index.html`, `app.js`, `styles.css`, `Code.gs`, `README.md`, `VERSION.txt`, `.nojekyll`.
+4. Commit changes. Mở lại website và nhấn Ctrl+F5 để tải bản mới.
+5. **Quan trọng:** mở Apps Script, thay toàn bộ mã cũ bằng `Code.gs` mới trong gói, Save → Deploy → Manage deployments → Edit (biểu tượng bút chì) → chọn New version → Deploy. Giữ nguyên URL `/exec`; không tạo deployment URL mới nếu không cần.
+6. Mở TVD, đăng xuất/đăng nhập lại, vào Ngân hàng câu hỏi để nhập tệp. Sheet `Bank` sẽ tự được tạo khi import câu đầu tiên.
+
+
+## 12. Giới hạn và khuyến nghị vận hành
 
 Đây là bản triển khai thực tế quy mô nhỏ/nhóm lớp dựa trên GitHub Pages + Google Apps Script + Google Sheets, chưa phải nền tảng thi quy mô lớn có chứng nhận an toàn thông tin.
 
@@ -161,7 +222,7 @@ Chỉ tổ chức bài kiểm tra thật sau khi hoàn tất các bước kiểm
 - Cần sao lưu Google Sheet định kỳ; không xóa trang `Exams`, `Attempts`, `Results` khi hệ thống đang vận hành.
 - Không lưu thông tin nhạy cảm không cần thiết của học sinh.
 
-## 12. Xử lý một số lỗi thường gặp
+## 13. Xử lý một số lỗi thường gặp
 
 **A. Giáo viên đăng nhập báo mã truy cập sai**
 - Kiểm tra lại `TEACHER_TOKEN` trong `Code.gs`.
