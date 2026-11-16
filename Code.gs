@@ -3,6 +3,7 @@
  * 2) Dien SPREADSHEET_ID va TEACHER_TOKEN ben duoi.
  * 3) Deploy > New deployment > Web app, Execute as: Me.
  * 4) Giao dien doc du lieu bang JSONP va gui thao tac ghi bang POST text/plain.
+ * 5) Anh trong cau hoi duoc luu vao Google Drive; lan dau can cap quyen DriveApp.
  ******************************************************************************/
 const TVD_CONFIG = {
   SPREADSHEET_ID: 'DAN_ID_GOOGLE_SHEET_VAO_DAY',
@@ -17,7 +18,8 @@ const TVD_HEADERS = {
   Exams: ['id', 'json'],
   Results: ['id', 'examId', 'studentKey', 'json'],
   Attempts: ['attemptId', 'examId', 'studentKey', 'startedAt', 'expiresAt', 'name', 'className', 'studentId', 'status'],
-  Bank: ['id', 'questionKey', 'json', 'createdAt', 'updatedAt']
+  Bank: ['id', 'questionKey', 'json', 'createdAt', 'updatedAt'],
+  Media: ['assetKey', 'fileId', 'url', 'filename', 'createdAt']
 };
 
 function doGet(e) {
@@ -27,7 +29,7 @@ function doGet(e) {
     let result;
     switch (action) {
       case 'health':
-        result = { ok: true, app: 'TVD', version: '1.2', time: new Date().toISOString() };
+        result = { ok: true, app: 'TVD', version: '1.5.0', time: new Date().toISOString() };
         break;
       case 'get':
         result = getPublicExam_(params.id);
@@ -53,6 +55,10 @@ function doGet(e) {
       case 'bankList':
         requireTeacher_(params.token);
         result = listBankQuestions_();
+        break;
+      case 'mediaGet':
+        requireTeacher_(params.token);
+        result = getUploadedMedia_(params.assetKey);
         break;
       default:
         throw new Error('Lệnh GET không hợp lệ.');
@@ -92,6 +98,10 @@ function doPost(e) {
         deleteBankQuestion_(data.id);
         result = { ok: true };
         break;
+      case 'mediaUpload':
+        requireTeacher_(request.token);
+        result = saveUploadedMedia_(data);
+        break;
       case 'submit':
         result = submitResult_(data);
         break;
@@ -103,6 +113,36 @@ function doPost(e) {
     return ContentService.createTextOutput(JSON.stringify({ ok: false, error: safeMessage_(err) }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function saveUploadedMedia_(data) {
+  const key = String(data.assetKey || '').trim();
+  const filename = String(data.filename || 'TVD_image.jpg').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100);
+  const mime = String(data.mime || 'image/jpeg');
+  const base64 = String(data.base64 || '');
+  if (!key || !base64) throw new Error('Thiếu mã ảnh hoặc dữ liệu ảnh.');
+  if (!/^image\/(jpeg|png|webp|gif)$/.test(mime)) throw new Error('Định dạng ảnh chưa được hỗ trợ.');
+  if (base64.length > 280000) throw new Error('Ảnh vượt giới hạn dung lượng. Hãy nén/cắt ảnh trước khi tải lên.');
+  const lock = LockService.getScriptLock();lock.waitLock(10000);
+  try {
+  const existing = rows_('Media').find(row => String(row[0]) === key);
+  if (existing) return { ok: true, assetKey: key, url: String(existing[2]) };
+  let bytes;
+  try { bytes = Utilities.base64Decode(base64); } catch (_) { throw new Error('Dữ liệu ảnh không hợp lệ.'); }
+  const blob = Utilities.newBlob(bytes, mime, filename);
+  const file = DriveApp.createFile(blob);
+  try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }
+  catch (err) { file.setTrashed(true); throw new Error('Google Drive của tài khoản không cho chia sẻ ảnh theo liên kết. Hãy kiểm tra chính sách chia sẻ của tài khoản.'); }
+  const url = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+  sheet_('Media').appendRow([key, file.getId(), url, filename, new Date().toISOString()]);
+  return { ok: true, assetKey: key, url: url };
+  } finally { lock.releaseLock(); }
+}
+function getUploadedMedia_(assetKey) {
+  const key = String(assetKey || '').trim();
+  if (!key) throw new Error('Thiếu mã ảnh.');
+  const row = rows_('Media').find(r => String(r[0]) === key);
+  return row ? { assetKey: key, url: String(row[2]), filename: String(row[3] || '') } : null;
 }
 
 function jsonpResponse_(callback, data) {
@@ -196,7 +236,7 @@ function getPublicExam_(id) {
       text: q.text,
       type: q.type,
       point: q.point,
-      options: q.options || {}
+      options: q.options || {}, section: q.section || '', sectionTitle: q.sectionTitle || '', questionNumber: q.questionNumber || 0
       // Tuyet doi khong gui answer, tolerance hoac explain cho trinh duyet hoc sinh.
     }))
   };
@@ -227,6 +267,10 @@ function validateExam_(ex) {
       if (!['A', 'B', 'C', 'D'].includes(String(q.answer).toUpperCase())) throw new Error('Đáp án câu ' + n + ' phải là A, B, C hoặc D.');
     } else if (q.type === 'truefalse') {
       if (!['Đ', 'S'].includes(normalizeTF_(q.answer))) throw new Error('Đáp án câu ' + n + ' phải là Đ hoặc S.');
+    } else if (q.type === 'tf_multi') {
+      const keys = ['A','B','C','D'].filter(k => String((q.options || {})[k] || '').trim());
+      const answer = normalizeTFSequence_(q.answer);
+      if (keys.length < 2 || keys.length > 4 || answer.length !== keys.length) throw new Error('Câu ' + n + ': đúng/sai nhiều ý cần 2–4 mệnh đề và chuỗi đáp án Đ/S khớp số ý.');
     } else if (q.type === 'short') {
       if (Number(q.tolerance || 0) < 0) throw new Error('Dung sai câu ' + n + ' không được âm.');
     } else {
@@ -286,6 +330,10 @@ function validateBankQuestion_(q, index) {
     if (String(q.answer || '').trim() && !['A','B','C','D'].includes(String(q.answer).toUpperCase())) throw new Error('Đáp án câu ' + n + ' phải là A/B/C/D.')
   } else if (q.type === 'truefalse') {
     if (String(q.answer || '').trim() && !['Đ','S'].includes(normalizeTF_(q.answer))) throw new Error('Đáp án câu ' + n + ' phải là Đ hoặc S.');
+  } else if (q.type === 'tf_multi') {
+    const keys = ['A','B','C','D'].filter(k => String((q.options || {})[k] || '').trim());
+    const answer = normalizeTFSequence_(q.answer);
+    if (keys.length < 2 || keys.length > 4 || (answer && answer.length !== keys.length)) throw new Error('Câu ' + n + ' cần 2–4 mệnh đề và nếu có đáp án thì chuỗi Đ/S phải tương ứng.');
   } else if (q.type === 'short') {
     if (Number(q.tolerance || 0) < 0) throw new Error('Dung sai câu ' + n + ' không được âm.');
   } else throw new Error('Dạng câu hỏi câu ' + n + ' không hợp lệ.');
@@ -444,12 +492,12 @@ function submitResult_(payload) {
     let total = 0;
     const details = [];
     (ex.questions || []).forEach(q => {
-      const answer = String(answers[q.id] == null ? '' : answers[q.id]).trim();
+      const answer = answers[q.id] == null ? '' : answers[q.id];
       const point = Number(q.point) || 0;
       total += point;
-      const correct = answerIsCorrect_(q, answer);
-      if (correct) rawScore += point;
-      details.push({ questionId: q.id, answer: answer, correct: correct });
+      const scored = scoreQuestion_(q, answer, point);
+      rawScore += scored.earned;
+      details.push({ questionId: q.id, answer: answer, correct: scored.correct, earned: scored.earned });
     });
     const score = total ? Math.round((rawScore / total) * 1000) / 100 : 0;
     const result = {
@@ -465,6 +513,32 @@ function submitResult_(payload) {
     sheet_('Attempts').getRange(attemptIndex + 2, 9).setValue('SUBMITTED');
     return { ok: true, received: true };
   } finally { lock.releaseLock(); }
+}
+
+function normalizeTFSequence_(value) {
+  const source = String(value == null ? '' : value).toLocaleLowerCase('vi-VN');
+  const result = [];
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === 'đ' || ch === 'd' || ch === 't') result.push('Đ');
+    else if (ch === 's' || ch === 'f') result.push('S');
+  }
+  return result.join('');
+}
+function scoreQuestion_(q, answer, point) {
+  if (q.type !== 'tf_multi') {
+    const correct = answerIsCorrect_(q, answer);
+    return { correct: correct, earned: correct ? point : 0 };
+  }
+  const expected = normalizeTFSequence_(q.answer);
+  const keys = ['A','B','C','D'].filter(k => String((q.options || {})[k] || '').trim());
+  let correctCount = 0;
+  keys.forEach((key, i) => {
+    const actual = answer && typeof answer === 'object' ? answer[key] : '';
+    if (normalizeTF_(actual) === expected.charAt(i)) correctCount++;
+  });
+  const earned = expected.length ? point * correctCount / expected.length : 0;
+  return { correct: correctCount === expected.length, earned: Math.round(earned * 10000) / 10000 };
 }
 
 function answerIsCorrect_(q, answer) {

@@ -15,7 +15,7 @@ Bộ mã nguồn triển khai ứng dụng thi trực tuyến trên GitHub Pages
 | `Mau_Ngan_Hang_Cau_Hoi_TVD.csv` | Mẫu nhập câu hỏi bằng Excel/CSV |
 | `Mau_Ngan_Hang_Cau_Hoi_TVD.json` | Mẫu nhập câu hỏi bằng JSON |
 | `CHANGELOG_1.3.0.md` | Nhật ký nâng cấp phiên bản 1.3.0 |
-| `Mau_Toan_Hoc_TVD_1.4.0.txt` | Mẫu công thức LaTeX, đồ thị, hình học và bảng biến thiên |
+| `Mau_Toan_Hoc_TVD_1.5.0.txt` | Mẫu công thức LaTeX, đồ thị, hình học và bảng biến thiên |
 
 ## 2. Chức năng
 
@@ -45,7 +45,7 @@ Bộ mã nguồn triển khai ứng dụng thi trực tuyến trên GitHub Pages
 - Không trả đáp án chuẩn trong API công khai dành cho học sinh.
 - Kiểm tra thời gian mở/đóng, hạn làm bài và lượt nộp trùng theo mã học sinh; nếu không nhập mã học sinh, hệ thống đối chiếu họ tên + lớp. Mỗi học sinh chỉ được cấp một lượt bắt đầu trong một đợt; nếu hết giờ mà chưa nộp, lượt đó không thể tự khởi động lại.
 
-## 2A. Hiển thị công thức, hình học, đồ thị và bảng biến thiên (mới ở 1.4.0)
+## 2A. Hiển thị công thức, hình học, đồ thị và bảng biến thiên (mới ở 1.5.0)
 
 ### Công thức LaTeX
 - Công thức trong dòng: `\(\frac{x^2-1}{x+1}\)`.
@@ -111,7 +111,7 @@ Ví dụ địa chỉ:
 
 ID là `1AbC...XyZ`.
 
-Không cần tự tạo các trang tính. Apps Script tự tạo ba trang `Exams`, `Attempts`, `Results` ở lần chạy đầu.
+Không cần tự tạo các trang tính. Apps Script tự tạo `Exams`, `Attempts`, `Results`; khi nhập ngân hàng sẽ tạo `Bank`, và khi tải ảnh lên sẽ tạo `Media`.
 
 ## 5. Cài Apps Script làm máy chủ
 
@@ -312,7 +312,7 @@ Chỉ thay `index.html`, `app.js`, `styles.css`, `README.md`, `VERSION.txt`, `.n
 - Sau khi có lượt thi đầu tiên, nội dung câu hỏi, lớp, thời lượng và lịch mở/đóng của đợt được khóa để tránh thay đổi đáp án giữa kỳ thi; giáo viên vẫn có thể đóng/mở đợt. Muốn đổi nội dung, hãy tạo đợt mới.
 - Google Apps Script và Sheets có hạn mức theo tài khoản và giới hạn hiệu năng; cần kiểm thử số lượng học sinh đồng thời. Với kỳ thi toàn trường hoặc nhiều trường, nên chuyển sang backend chuyên dụng như Firebase/Supabase hoặc máy chủ riêng có đăng nhập, phân quyền, sao lưu và giám sát.
 - Chưa có chống gian lận nâng cao như khóa trình duyệt, giám sát webcam, đảo câu/phương án, phát hiện chuyển tab, chặn chụp màn hình hoặc xác minh danh tính.
-- Cần sao lưu Google Sheet định kỳ; không xóa trang `Exams`, `Attempts`, `Results` khi hệ thống đang vận hành.
+- Cần sao lưu Google Sheet định kỳ; không xóa trang `Exams`, `Attempts`, `Results`, `Bank`, `Media` khi hệ thống đang vận hành.
 - Không lưu thông tin nhạy cảm không cần thiết của học sinh.
 
 ## 14. Xử lý một số lỗi thường gặp
@@ -340,3 +340,33 @@ Chỉ thay `index.html`, `app.js`, `styles.css`, `README.md`, `VERSION.txt`, `.n
 **E. Sửa Apps Script nhưng ứng dụng vẫn chạy mã cũ**
 - Vào **Deploy → Manage deployments → Edit → New version → Deploy**.
 - Không chỉ nhấn Save trong trình soạn thảo; phải cập nhật deployment đang sử dụng.
+
+
+## 12. Nhận dạng phần đề, đáp án, ảnh và câu đúng/sai nhiều mệnh đề (1.5.0)
+
+### Cấu trúc phần
+Bộ đọc nhận diện các tiêu đề `PHẦN I`, `PHẦN II`, `PHẦN III`, `PHẦN IV` (hoặc `PART I`...) và gán mặc định: Phần I trắc nghiệm 4 lựa chọn; Phần II đúng/sai; Phần III trả lời ngắn; Phần IV tự luận/khác. Giáo viên có thể sửa phần trong từng câu sau khi nhập. Khi học sinh làm bài, hệ thống hiển thị tiêu đề phần.
+
+### Nhận diện đáp án
+Hỗ trợ các kiểu thường gặp: `Câu 1: B`, `1. B`, `1) B`, nhiều cặp `1.B 2.C 3.A`, chuỗi đúng/sai nhiều mệnh đề `Câu 4: ĐSĐS`, và bảng đáp án hai dòng (dòng số câu, dòng ký hiệu đáp án). Kết quả chỉ là gợi ý tự động; giáo viên phải rà soát từng đáp án. Bộ đọc phân biệt phương án trắc nghiệm viết hoa `A.`–`D.` với các mệnh đề đúng/sai viết thường `a)`–`d)`, nhận diện được answer key theo phần, bảng dạng `1 | B` hoặc cặp `1 | B | 2 | C`.
+
+### Đúng/sai nhiều mệnh đề
+Trong một câu, khai báo 2–4 mệnh đề a), b), c), d). Đáp án chuẩn nhập liền chuỗi theo thứ tự, ví dụ `ĐSĐS`. Học sinh chọn Đúng/Sai riêng từng mệnh đề. Máy chủ chia đều điểm câu cho số mệnh đề và cộng điểm theo số ý đúng.
+
+### Ảnh Word và dán ảnh
+- Tệp DOCX: ảnh raster hoặc SVG nhúng được trích từ nội dung Word và gắn vào câu hỏi khi bộ đọc giữ được vị trí trong dòng.
+- Ô nội dung câu hỏi: có thể sao chép ảnh rồi nhấn `Ctrl+V` để chèn trực tiếp; hỗ trợ dữ liệu ảnh trên clipboard và ảnh `data:image` nằm trong HTML clipboard khi trình duyệt cung cấp.
+- Chế độ trực tuyến: ảnh được nén, tải lên Google Drive, thay bằng URL trong câu hỏi để học sinh ở thiết bị khác vẫn xem được. Apps Script tự tạo sheet `Media`.
+- Khi đăng triển khai lần đầu, Apps Script cần quyền Google Drive (DriveApp). Trong lần triển khai lại `Code.gs`, Google có thể yêu cầu cấp quyền Drive. Nếu quản trị viên Google Workspace tắt chia sẻ `Anyone with the link`, ảnh không mở được với học sinh ngoài tổ chức; cần kiểm tra chính sách chia sẻ trước khi thi.
+
+### PDF có hình
+Nếu PDF có image operator, hệ thống lưu ảnh chụp trang PDF đã nén để giữ hình vẽ/đồ thị/bảng scan. Ảnh trang được đính kèm vào câu cuối nhận diện trong trang đó, vì vậy giáo viên phải kiểm tra xem ảnh có đúng câu hay không. PDF scan không có lớp chữ chưa được OCR trong bản này.
+
+### Triển khai cập nhật
+1. GitHub: thay `app.js`, `styles.css`, `index.html`, `VERSION.txt`, `README.md` và `.nojekyll` bằng các tệp 1.5.0.
+2. Apps Script: thay toàn bộ `Code.gs`, kiểm tra `SPREADSHEET_ID` và `TEACHER_TOKEN` giữ nguyên, Save.
+3. Deploy → Manage deployments → Edit → New version → Deploy. Giữ nguyên Web App URL `/exec`.
+4. Lần tải ảnh đầu tiên, Google yêu cầu cấp thêm quyền Drive; chấp thuận quyền cho ứng dụng triển khai.
+5. Khi Google yêu cầu, chấp thuận quyền Google Drive. Nếu dự án Apps Script có manifest khai báo `oauthScopes` thủ công, bảo đảm có quyền `https://www.googleapis.com/auth/drive` và `https://www.googleapis.com/auth/spreadsheets`.
+6. Thử nhập một DOCX có ảnh, một PDF có đồ họa vector/ảnh, dán thử một ảnh bằng `Ctrl+V`, lưu đề, mở link bằng điện thoại khác để xác nhận ảnh hiển thị.
+7. Thử đề Phần II có mệnh đề `a)`–`d)` nhưng chưa kèm đáp án, kiểm tra hệ thống vẫn phân loại đúng/sai nhiều ý; sau đó kiểm tra ghép đáp án từ cuối đề.

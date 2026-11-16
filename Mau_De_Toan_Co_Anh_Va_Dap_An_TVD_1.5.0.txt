@@ -1,0 +1,24 @@
+PHẦN I. TRẮC NGHIỆM NHIỀU LỰA CHỌN
+Câu 1. Giá trị của \(2+3\) bằng bao nhiêu?
+A. 4
+B. 5
+C. 6
+D. 7
+
+PHẦN II. TRẮC NGHIỆM ĐÚNG/SAI
+Câu 1. Cho hàm số \(f(x)=x^2-1\). Xét tính đúng sai của các mệnh đề:
+a) \(f(0)=-1\).
+b) Đồ thị hàm số là parabol.
+c) Hàm số đồng biến trên \((0;+\infty)\).
+d) Phương trình \(f(x)=0\) có hai nghiệm.
+
+PHẦN III. TRẢ LỜI NGẮN
+Câu 1. Tính \(\lim_{x\to 0}\frac{\sin x}{x}\).
+
+ĐÁP ÁN
+PHẦN I
+1. B
+PHẦN II
+1. ĐSĐĐ
+PHẦN III
+1. 1

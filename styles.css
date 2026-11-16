@@ -53,3 +53,14 @@
 .geometry-axis{stroke:#a2a9bb;stroke-width:1.4;stroke-dasharray:5 4}
 
 .math-option-preview{min-height:0;padding:4px 2px;color:#39445f;font-size:13px;line-height:1.65}.math-option-preview:empty{display:none}
+
+/* TVD 1.5.0: embedded exam media and multipart true/false */
+.question-image-figure{margin:12px 0 16px;max-width:100%;padding:8px;border:1px solid #e2e6f0;border-radius:12px;background:#fff;text-align:center}
+.question-media{display:block;max-width:100%;max-height:680px;width:auto;height:auto;margin:0 auto;object-fit:contain}
+.question-image-figure figcaption{font-size:11px;color:#7b8498;margin-top:5px}
+.student-section-heading{margin:20px 0 10px;padding:12px 15px;border-left:4px solid var(--primary);border-radius:8px;background:#efedff;color:#4032b8;font-weight:850;letter-spacing:.2px}
+.tf-multi-item{border:1px solid var(--line);border-radius:11px;padding:12px;margin:9px 0;background:#fcfcff}
+.tf-multi-statement{line-height:1.75;margin-bottom:7px;overflow-wrap:anywhere}
+.tf-multi-statement b{color:var(--primary);margin-right:6px}
+.tf-multi-choices{display:flex;gap:10px;flex-wrap:wrap}
+.answer-option.compact{margin:0;min-width:110px;padding:7px 11px}

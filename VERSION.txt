@@ -1,4 +1,4 @@
 TVD – Hệ thống thi online
-Version: 1.4.0
+Version: 1.5.0
 Release: 2026-11-17
-Features: MathJax LaTeX, SVG function graphs, SVG geometry diagrams, variation tables, live math preview.
+Features: section-aware exam import, answer-key recognition, DOCX embedded-image extraction, PDF facsimile snapshots for pages containing image operators, Drive-hosted media, paste images, multipart true/false scoring, MathJax and SVG math visualizations.
