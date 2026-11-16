@@ -1,0 +1,39 @@
+MẪU NỘI DUNG TOÁN HỌC TRONG TVD 1.4.0
+
+Câu 1. Tính đạo hàm của hàm số \(f(x)=x^3-3x+1\).
+A. \(3x^2-3\)
+B. \(3x^2+3\)
+C. \(x^2-3\)
+D. \(3x-3\)
+Điểm: 1
+Đáp án: A
+
+Câu 2. Cho hàm số có đồ thị sau. Xác định giao điểm với trục hoành.
+[[TVD_GRAPH:{"expression":"x^2-4","xMin":-3,"xMax":3,"yMin":-5,"yMax":5,"label":"y = x^2 - 4"}]]
+A. \(-2;2\)
+B. \(-2;0\) và \((2;0)\)
+C. \((0;-4)\)
+D. Không có giao điểm
+Điểm: 1
+Đáp án: B
+
+Câu 3. Cho tam giác ABC có hình minh họa.
+[[TVD_GEOMETRY:{"caption":"Tam giác ABC","points":[{"name":"A","x":0,"y":0},{"name":"B","x":4,"y":0},{"name":"C","x":1.2,"y":3}],"segments":[["A","B"],["B","C"],["C","A"]]}]]
+Tính diện tích tam giác ABC.
+Điểm: 1
+Đáp án: 6
+
+Câu 4. Bảng biến thiên của hàm số được cho như sau.
+[[TVD_VARIATION:{"caption":"Bảng biến thiên minh họa","x":["-∞","-1","1","+∞"],"values":["+∞","0","-2","+∞"],"signs":["-","+","-"],"trend":["down","up","down"]}]]
+Hàm số nghịch biến trên khoảng nào?
+Điểm: 1
+Đáp án: (-∞;-1)
+
+GHI CHÚ ĐỊNH DẠNG
+- Công thức: dùng \( ... \) cho công thức trong dòng hoặc \[ ... \] cho công thức riêng dòng.
+- Đồ thị: [[TVD_GRAPH:{JSON}]] với expression, xMin, xMax, yMin, yMax. Hỗ trợ + - * / ^, ngoặc, x, pi, e, sin, cos, tan, sqrt, abs, exp, ln, log.
+- Hình học: [[TVD_GEOMETRY:{JSON}]] với points, segments, dashedSegments, circles. Tọa độ điểm là tọa độ phẳng do người soạn quy ước.
+- Bảng biến thiên: [[TVD_VARIATION:{JSON}]] với x, values (hoặc f), signs, trend. trend nhận down/up/flat.
+
+HÌNH HỌC KHÔNG GIAN MINH HỌA (chiếu phối cảnh xiên)
+[[TVD_GEOMETRY:{"caption":"Hình chóp S.ABC","projection":"3d","points":[{"name":"O","x":0,"y":0,"z":0},{"name":"A","x":2,"y":0,"z":0},{"name":"B","x":0,"y":2,"z":0},{"name":"C","x":-2,"y":0,"z":0},{"name":"S","x":0,"y":3,"z":1}],"segments":[["A","B"],["B","C"],["C","A"],["S","A"],["S","B"],["S","C"]]}]]

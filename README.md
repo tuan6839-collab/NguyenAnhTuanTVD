@@ -14,7 +14,8 @@ Bộ mã nguồn triển khai ứng dụng thi trực tuyến trên GitHub Pages
 | `.nojekyll` | Giúp GitHub Pages phục vụ tệp tĩnh ổn định |
 | `Mau_Ngan_Hang_Cau_Hoi_TVD.csv` | Mẫu nhập câu hỏi bằng Excel/CSV |
 | `Mau_Ngan_Hang_Cau_Hoi_TVD.json` | Mẫu nhập câu hỏi bằng JSON |
-| `CHANGELOG_1.2.0.md` | Nhật ký nâng cấp |
+| `CHANGELOG_1.3.0.md` | Nhật ký nâng cấp phiên bản 1.3.0 |
+| `Mau_Toan_Hoc_TVD_1.4.0.txt` | Mẫu công thức LaTeX, đồ thị, hình học và bảng biến thiên |
 
 ## 2. Chức năng
 
@@ -25,6 +26,9 @@ Bộ mã nguồn triển khai ứng dụng thi trực tuyến trên GitHub Pages
 - Tạo câu hỏi thủ công hoặc nhập ngân hàng câu hỏi từ DOCX, PDF có văn bản, XLSX/XLS, CSV, JSON và TXT; xem trước và tự cập nhật câu trùng.
 - Chọn câu hỏi đã lưu trong ngân hàng để tái sử dụng ở nhiều đợt kiểm tra.
 - Thiết lập điểm từng câu; câu trả lời ngắn hỗ trợ dung sai số.
+- Hiển thị công thức Toán bằng LaTeX/MathJax; hỗ trợ công thức trong đề, phương án và nội dung nhập từ tệp.
+- Dựng đồ thị hàm số từ biểu thức an toàn (không dùng `eval`), hình học SVG từ tọa độ/đoạn thẳng/đường tròn và bảng biến thiên từ dữ liệu có cấu trúc.
+- Có nút chèn nhanh công thức, đồ thị, hình phẳng, hình không gian và bảng biến thiên trong trình soạn câu hỏi; có khung xem trước ngay khi soạn.
 - Sao chép đường link có kèm cấu hình máy chủ để gửi qua Zalo.
 - Xem kết quả theo từng đợt; tải danh sách CSV có BOM, mở trực tiếp bằng Microsoft Excel.
 
@@ -41,10 +45,49 @@ Bộ mã nguồn triển khai ứng dụng thi trực tuyến trên GitHub Pages
 - Không trả đáp án chuẩn trong API công khai dành cho học sinh.
 - Kiểm tra thời gian mở/đóng, hạn làm bài và lượt nộp trùng theo mã học sinh; nếu không nhập mã học sinh, hệ thống đối chiếu họ tên + lớp. Mỗi học sinh chỉ được cấp một lượt bắt đầu trong một đợt; nếu hết giờ mà chưa nộp, lượt đó không thể tự khởi động lại.
 
+## 2A. Hiển thị công thức, hình học, đồ thị và bảng biến thiên (mới ở 1.4.0)
+
+### Công thức LaTeX
+- Công thức trong dòng: `\(\frac{x^2-1}{x+1}\)`.
+- Công thức riêng dòng: `\[\lim_{x\to 0}\frac{\sin x}{x}=1\]`.
+- Dùng các lệnh LaTeX phổ biến như `\frac`, `\sqrt`, `\int`, `\lim`, `\sum`, `\begin{cases}`, ma trận `\begin{pmatrix}...\end{pmatrix}`.
+- MathJax tải từ CDN; trình duyệt cần có Internet để kết xuất công thức. Nếu CDN bị chặn, nội dung LaTeX vẫn được giữ trong dữ liệu nhưng có thể hiển thị ở dạng mã nguồn.
+
+### Đồ thị hàm số
+Đặt marker trên một dòng riêng trong nội dung câu hỏi:
+
+```text
+[[TVD_GRAPH:{"expression":"x^2-4","xMin":-3,"xMax":3,"yMin":-5,"yMax":5,"label":"y = x^2 - 4"}]]
+```
+
+Biểu thức hỗ trợ `+ - * / ^`, ngoặc, biến `x`, hằng số `pi`, `e` và các hàm `sin`, `cos`, `tan`, `sqrt`, `abs`, `exp`, `ln`, `log`, `log10`, `asin`, `acos`, `atan`, `floor`, `ceil`. Đồ thị được lấy mẫu và dựng bằng SVG. Người soạn cần chọn miền x/y phù hợp để tránh cắt mất đặc điểm quan trọng.
+
+### Hình học SVG (phẳng và không gian)
+
+```text
+[[TVD_GEOMETRY:{"caption":"Tam giác ABC","points":[{"name":"A","x":0,"y":0},{"name":"B","x":4,"y":0},{"name":"C","x":1,"y":3}],"segments":[["A","B"],["B","C"],["C","A"]],"dashedSegments":[],"circles":[]}]]
+```
+
+`points` khai báo tên và tọa độ; `segments` là các đoạn nối; `dashedSegments` là nét đứt; `circles` dùng dạng `{"center":"O","radius":2}` (đối với hình phẳng). Với hình không gian, thêm `"projection":"3d"` và tọa độ `z` cho các điểm; hệ thống dựng hình chiếu phối cảnh xiên để minh họa. Hình không gian không phải mô hình 3D có thể xoay và không tự suy luận quan hệ vuông góc/song song.
+
+### Bảng biến thiên
+
+```text
+[[TVD_VARIATION:{"caption":"Bảng biến thiên","x":["-∞","-1","1","+∞"],"values":["+∞","0","-2","+∞"],"signs":["-","+","-"],"trend":["down","up","down"]}]]
+```
+
+`x` là các mốc theo thứ tự; `values` (hoặc `f`) là giá trị/giới hạn tương ứng tại các mốc; `signs` là dấu đạo hàm trên các khoảng; `trend` nhận `down`, `up`, `flat` để vẽ mũi tên biến thiên. Với bảng có cấu trúc khác, cần chỉnh JSON cho đúng dữ liệu thực tế.
+
+### Quy trình nhập đề Toán có công thức/hình vẽ
+1. Nhập tệp DOCX/PDF có văn bản hoặc dùng mẫu TXT/JSON.
+2. Xem trước đề; kiểm tra công thức, hình minh họa và các ký hiệu đặc biệt.
+3. Nếu công thức bị mất do tệp Word chứa đối tượng MathType dạng ảnh/OLE, nhập lại công thức bằng LaTeX; nếu hình gốc không được trích xuất, chèn marker SVG tương ứng.
+4. Chỉ lưu và phát hành sau khi giáo viên đối chiếu bản xem trước với đề gốc.
+
 ## 3. Đưa mã nguồn lên GitHub Pages
 
 1. Đăng nhập GitHub và tạo repository mới, ví dụ `tvd-thi-online`.
-2. Giải nén gói ZIP trên máy tính; các tệp `index.html`, `app.js`, `styles.css`, `Code.gs`, `README.md`, `.nojekyll` và `VERSION.txt` sẽ nằm ở thư mục vừa giải nén.
+2. Giải nén gói ZIP trên máy tính; các tệp `index.html`, `app.js`, `styles.css`, `Code.gs`, `README.md`, `.nojekyll`, `VERSION.txt` và tệp mẫu Toán học sẽ nằm ở thư mục vừa giải nén.
 3. Mở repository vừa tạo, chọn **Add file → Upload files**.
 4. Tải tất cả các tệp vừa giải nén lên **thư mục gốc repository**. Không chỉ tải tệp ZIP lên.
 5. Nhấn **Commit changes**.
@@ -207,7 +250,57 @@ Hệ thống coi hai câu là trùng nếu **nội dung câu hỏi sau chuẩn h
 6. Mở TVD, đăng xuất/đăng nhập lại, vào Ngân hàng câu hỏi để nhập tệp. Sheet `Bank` sẽ tự được tạo khi import câu đầu tiên.
 
 
-## 12. Giới hạn và khuyến nghị vận hành
+## 12. Tạo trực tiếp một đợt kiểm tra từ đề có sẵn – phiên bản 1.3.0
+
+Tính năng này khác với nhập vào **Ngân hàng câu hỏi**. Giáo viên có thể lấy một tệp đề kiểm tra hiện có và nạp thẳng câu hỏi vào trình soạn một đợt kiểm tra mới.
+
+### Cách sử dụng
+1. Đăng nhập giáo viên và mở **Tạo đề kiểm tra**.
+2. Tại khung **Tạo đề từ file có sẵn**, chọn tệp đề.
+3. Chọn điểm mặc định áp dụng cho các câu không ghi điểm trong tệp.
+4. Nhấn **Đọc đề và xem trước**. Hệ thống hiển thị số câu nhận diện được, các câu thiếu đáp án, câu trắc nghiệm thiếu phương án và phần xem trước nội dung.
+5. Chọn **Thêm vào đề** để nối câu hỏi vào danh sách hiện tại, hoặc **Thay câu hiện có** để thay toàn bộ danh sách câu hỏi trong trình soạn thảo.
+6. Rà soát lại từng câu trong trình soạn đề: nội dung, dạng câu, bốn phương án, đáp án, điểm, dung sai và lời giải.
+7. Điền lớp, thời lượng, lịch mở/đóng; nhấn **Lưu đợt kiểm tra**. Sau đó tạo link và gửi học sinh như thường lệ.
+
+### Định dạng tệp có thể đọc
+- `.docx`: Word mới; cấu trúc nên theo mẫu bên dưới.
+- `.pdf`: PDF có lớp văn bản có thể chọn/copy. PDF scan hoặc ảnh chụp không được OCR trong bản này.
+- `.xlsx`, `.xls`, `.csv`: bảng câu hỏi có tiêu đề cột như mẫu ngân hàng câu hỏi.
+- `.json`: mảng câu hỏi hoặc `{ "questions": [...] }` theo mẫu TVD.
+- `.txt`: văn bản theo cấu trúc câu hỏi mẫu.
+
+Mỗi lần nạp tối đa 200 câu. Tệp DOCX/PDF/TXT nên trình bày:
+
+```text
+Câu 1. Giá trị của 2+3 bằng bao nhiêu?
+A. 4
+B. 5
+C. 6
+D. 7
+Đáp án: B
+Điểm: 1
+Lời giải: Vì 2+3=5.
+
+Câu 2. Số 0 là số dương.
+Đáp án: S
+Điểm: 1
+
+Câu 3. Tính 3^2.
+Đáp án: 9
+Điểm: 1
+```
+
+**Lưu ý quan trọng:** tính năng trích xuất lấy văn bản và nhận diện mẫu câu. Không tự suy luận đáp án nếu tệp không ghi đáp án; không đọc được nội dung nằm trong ảnh, hình vẽ hoặc PDF scan; công thức MathType, phân số xếp chồng, bảng biến thiên và ký hiệu đặc biệt có thể bị biến đổi khi chuyển thành văn bản. Câu chưa có đáp án hoặc thiếu phương án vẫn được nạp để giáo viên hoàn thiện trong trình soạn thảo, nhưng không thể lưu thành đề chính thức cho đến khi bổ sung đầy đủ đáp án bắt buộc. Giáo viên phải kiểm tra lại đề trước khi mở cho học sinh.
+
+### Khác nhau giữa hai cách nhập
+- **Ngân hàng câu hỏi → Nhập câu hỏi từ tệp:** lưu câu hỏi dùng lại cho nhiều đề, hỗ trợ tự cập nhật câu trùng.
+- **Tạo đề kiểm tra → Tạo đề từ file có sẵn:** nạp ngay danh sách câu của tệp vào đề đang soạn để tạo một đợt thi.
+
+### Cập nhật phiên bản 1.3.0
+Chỉ thay `index.html`, `app.js`, `styles.css`, `README.md`, `VERSION.txt`, `.nojekyll` trong GitHub. Không thay `Code.gs` và không cần triển khai lại Apps Script, vì phiên bản này chỉ bổ sung luồng nhập tệp ở giao diện trình soạn đề; API lưu đề hiện có được giữ nguyên.
+
+## 13. Giới hạn và khuyến nghị vận hành
 
 Đây là bản triển khai thực tế quy mô nhỏ/nhóm lớp dựa trên GitHub Pages + Google Apps Script + Google Sheets, chưa phải nền tảng thi quy mô lớn có chứng nhận an toàn thông tin.
 
@@ -222,7 +315,7 @@ Hệ thống coi hai câu là trùng nếu **nội dung câu hỏi sau chuẩn h
 - Cần sao lưu Google Sheet định kỳ; không xóa trang `Exams`, `Attempts`, `Results` khi hệ thống đang vận hành.
 - Không lưu thông tin nhạy cảm không cần thiết của học sinh.
 
-## 13. Xử lý một số lỗi thường gặp
+## 14. Xử lý một số lỗi thường gặp
 
 **A. Giáo viên đăng nhập báo mã truy cập sai**
 - Kiểm tra lại `TEACHER_TOKEN` trong `Code.gs`.
