@@ -1,0 +1,14 @@
+TVD – Hệ thống thi online
+Version: 1.1.0
+Build: 2026-11-17
+
+Frontend: GitHub Pages (HTML/CSS/JavaScript)
+Backend: Google Apps Script Web App
+Database: Google Sheets
+
+Key changes in 1.1.0:
+- Server-side attempt issuance, timer expiry and grading.
+- Student public exam response excludes answer keys and teacher notes.
+- Duplicate submission and duplicate attempt checks.
+- Exam content is locked after the first attempt starts; status can still be changed.
+- Teacher result export to UTF-8 CSV for Excel.
